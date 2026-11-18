@@ -574,6 +574,20 @@ def prefill_dp_rank_kwargs(engine: Any, prefill_dp_rank: Any) -> dict[str, Any]:
     )
 
 
+def routed_dp_rank_kwargs(engine: Any, dp_rank: Any) -> dict[str, Any]:
+    """Pass the router's attention-DP rank under the name this SGLang accepts.
+
+    SGLang renamed ``data_parallel_rank`` to ``routed_dp_rank`` and removed the
+    deprecated alias in sgl-project/sglang#50671; older builds accept only
+    ``data_parallel_rank``. Remove the fallback once every supported SGLang
+    build accepts ``routed_dp_rank``.
+    """
+    supported = filter_supported_async_generate_kwargs(
+        engine, {"routed_dp_rank": dp_rank}
+    )
+    return supported or {"data_parallel_rank": dp_rank}
+
+
 def require_reasoning_kwargs(
     engine: Any,
     request: Mapping[str, Any],

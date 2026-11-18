@@ -3293,6 +3293,22 @@ def test_prefill_dp_rank_kwargs_follows_engine_signature():
     assert prefill_dp_rank_kwargs(OlderEngine(), 3) == {}
 
 
+def test_routed_dp_rank_kwargs_follows_engine_signature():
+    from dynamo.sglang._compat import routed_dp_rank_kwargs
+
+    class Engine:
+        async def async_generate(self, *, rid=None, routed_dp_rank=None):
+            pass
+
+    class OlderEngine:
+        async def async_generate(self, *, rid=None, data_parallel_rank=None):
+            pass
+
+    assert routed_dp_rank_kwargs(Engine(), 1) == {"routed_dp_rank": 1}
+    assert routed_dp_rank_kwargs(Engine(), None) == {"routed_dp_rank": None}
+    assert routed_dp_rank_kwargs(OlderEngine(), 1) == {"data_parallel_rank": 1}
+
+
 @pytest.mark.asyncio
 async def test_disagg_decode_passes_prefill_dp_rank_to_engine():
     handler = _new_decode_handler()
@@ -3331,7 +3347,8 @@ async def test_disagg_decode_passes_prefill_dp_rank_to_engine():
     [output async for output in handler.generate(request, context)]
     kwargs = handler.engine.async_generate.await_args.kwargs
     assert kwargs["disagg_prefill_dp_rank"] == 3
-    assert kwargs["data_parallel_rank"] == 1
+    assert kwargs["routed_dp_rank"] == 1
+    assert "data_parallel_rank" not in kwargs
 
 
 def test_build_native_generate_request_forwards_prefill_dp_rank():
